@@ -25,30 +25,29 @@ class Receipt(models.Model):
         null=True,
         blank=True,
         editable=False,
-        help_text="Generated PDF receipt (immutable)",
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["-created_at"]
-        verbose_name = "Receipt"
-        verbose_name_plural = "Receipts"
 
     # -------------------------
-    # Immutability Enforcement
+    # Controlled immutability
     # -------------------------
     def save(self, *args, **kwargs):
         if self.pk:
-            raise ValidationError("Receipts are immutable and cannot be modified.")
+            original = Receipt.objects.get(pk=self.pk)
+
+            # ❌ Block changes EXCEPT first-time PDF attachment
+            if original.pdf and original.pdf != self.pdf:
+                raise ValidationError("Receipts are immutable once PDF is generated.")
+
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
         raise ValidationError("Receipts cannot be deleted.")
 
-    # -------------------------
-    # Utilities
-    # -------------------------
     @property
     def has_pdf(self):
         return bool(self.pdf)

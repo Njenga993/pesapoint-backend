@@ -1,6 +1,5 @@
 import io
 from django.core.files.base import ContentFile
-from django.core.exceptions import ValidationError
 
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
@@ -17,11 +16,15 @@ class ReceiptPDFService:
     @staticmethod
     def generate(receipt: Receipt) -> ContentFile:
         """
-        Generate PDF for a receipt and return as ContentFile.
+        Generate PDF for a receipt.
+
+        Raises:
+            ValueError: if PDF already exists
         """
 
-        if hasattr(receipt, "pdf") and receipt.pdf:
-            raise ValidationError("PDF already generated for this receipt")
+        # ✅ Service-level rule (tests expect ValueError)
+        if receipt.pdf:
+            raise ValueError("PDF already generated for this receipt")
 
         buffer = io.BytesIO()
         c = canvas.Canvas(buffer, pagesize=A4)
@@ -32,9 +35,7 @@ class ReceiptPDFService:
         payment = receipt.payment
         order = payment.order
 
-        # -------------------------
         # Header
-        # -------------------------
         c.setFont("Helvetica-Bold", 16)
         c.drawString(30 * mm, y, "PESAPOINT RECEIPT")
 
@@ -48,9 +49,7 @@ class ReceiptPDFService:
             f"Date: {receipt.created_at.strftime('%Y-%m-%d %H:%M')}",
         )
 
-        # -------------------------
         # Payment Info
-        # -------------------------
         y -= 12 * mm
         c.setFont("Helvetica-Bold", 11)
         c.drawString(30 * mm, y, "Payment Details")
@@ -66,9 +65,7 @@ class ReceiptPDFService:
         y -= 5 * mm
         c.drawString(30 * mm, y, f"Amount Paid: {payment.amount}")
 
-        # -------------------------
         # Footer
-        # -------------------------
         y -= 20 * mm
         c.setFont("Helvetica-Oblique", 9)
         c.drawString(
@@ -82,7 +79,12 @@ class ReceiptPDFService:
 
         buffer.seek(0)
 
-        return ContentFile(
+        pdf_file = ContentFile(
             buffer.read(),
             name=f"{receipt.receipt_number}.pdf",
         )
+
+        # ✅ First-time attachment only
+        receipt.pdf.save(pdf_file.name, pdf_file, save=True)
+
+        return pdf_file
