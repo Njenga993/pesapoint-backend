@@ -198,3 +198,31 @@ def test_cannot_refund_pending_or_reversed_payment(
     with pytest.raises(ValidationError):
         PaymentService.refund_payment(payment)
 
+@pytest.mark.django_db
+def test_receipt_is_generated_on_payment_finalization(
+    business,
+    product,
+    order_with_items,
+    chart_of_accounts
+):
+    from apps.receipts.models import Receipt
+
+    Inventory.objects.create(
+        business=business,
+        product=product,
+        quantity=20
+    )
+
+    SalesService.finalize_order(order_with_items)
+
+    payment = PaymentService.record_payment(
+        order=order_with_items,
+        amount=Decimal("100.00"),
+        method="cash"
+    )
+
+    PaymentService.finalize_payment(payment)
+
+    receipt = Receipt.objects.get(payment=payment)
+
+    assert receipt.receipt_number.startswith("RCT-")

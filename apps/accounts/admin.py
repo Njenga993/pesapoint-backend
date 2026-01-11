@@ -23,6 +23,11 @@ class AccountAdmin(admin.ModelAdmin):
 
 @admin.register(LedgerEntry)
 class LedgerEntryAdmin(admin.ModelAdmin):
+    """
+    Ledger entries are strictly read-only in admin.
+    This is an audit surface, not a data entry interface.
+    """
+
     list_display = (
         "created_at",
         "account",
@@ -35,8 +40,10 @@ class LedgerEntryAdmin(admin.ModelAdmin):
     search_fields = ("reference",)
     ordering = ("-created_at",)
 
-    # 🔒 FULL LOCKDOWN
+    # 🔒 FULL LOCKDOWN — READ ONLY
     readonly_fields = (
+        "order",
+        "payment",
         "account",
         "debit",
         "credit",

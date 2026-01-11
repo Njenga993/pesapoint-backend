@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'apps.businesses.apps.BusinessesConfig',
     'apps.products.apps.ProductsConfig',
     'apps.sales.apps.SalesConfig',
+    'apps.receipts.apps.ReceiptsConfig',
 
 
 ]

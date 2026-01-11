@@ -5,6 +5,7 @@ from django.db.models import Sum, F
 
 from apps.sales.models import Payment, Order
 from apps.accounts.services.ledger_service import LedgerService
+from apps.receipts.services.receipt_service import ReceiptService
 
 
 class PaymentService:
@@ -75,7 +76,13 @@ class PaymentService:
 
     @staticmethod
     @transaction.atomic
-    def record_payment(*, order: Order, amount: Decimal, method: str, reference: str = "") -> Payment:
+    def record_payment(
+        *,
+        order: Order,
+        amount: Decimal,
+        method: str,
+        reference: str = ""
+    ) -> Payment:
         order = PaymentService._get_locked_order(order)
 
         if order.status != Order.STATUS_COMPLETED:
@@ -110,11 +117,13 @@ class PaymentService:
 
         # 🔒 Ledger write (payment)
         LedgerService.record_payment(
-              order=payment.order,
-              payment=payment,
-              amount=payment.amount,
-)
+            order=payment.order,
+            payment=payment,
+            amount=payment.amount,
+        )
 
+        # 🧾 Receipt generation (single line, idempotent)
+        ReceiptService.generate_receipt(payment)
 
         return payment
 
@@ -124,7 +133,10 @@ class PaymentService:
 
     @staticmethod
     @transaction.atomic
-    def refund_payment(payment: Payment, amount: Decimal | None = None) -> Payment:
+    def refund_payment(
+        payment: Payment,
+        amount: Decimal | None = None
+    ) -> Payment:
         payment = Payment.objects.select_for_update().get(pk=payment.pk)
 
         if payment.status != Payment.STATUS_COMPLETED:
@@ -150,7 +162,6 @@ class PaymentService:
             order=refund.order,
             payment=refund,
             amount=refund.amount,
-)
-
+        )
 
         return refund

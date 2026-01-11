@@ -9,6 +9,7 @@ from django.db.models import Q
 class User(AbstractUser):
     """
     Core user model for PesaPoint.
+    RBAC is handled via Django Groups & Permissions.
     """
     pass
 
@@ -17,6 +18,7 @@ class Account(models.Model):
     """
     Chart of Accounts.
     """
+
     code = models.CharField(max_length=20, unique=True)
     name = models.CharField(max_length=100)
 
@@ -67,7 +69,6 @@ class LedgerEntry(models.Model):
         related_name="ledger_entries",
     )
 
-    # ⚠️ TEMPORARY: allow nulls for safe migration
     account = models.ForeignKey(
         Account,
         on_delete=models.PROTECT,
@@ -94,10 +95,14 @@ class LedgerEntry(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     # -------------------------
-    # Constraints
+    # Meta & Constraints
     # -------------------------
     class Meta:
         ordering = ["created_at"]
+        permissions = [
+            ("view_financial_reports", "Can view financial reports"),
+            ("print_financial_reports", "Can print financial reports"),
+        ]
         constraints = [
             models.CheckConstraint(
                 condition=(
@@ -113,23 +118,30 @@ class LedgerEntry(models.Model):
         ]
 
     # -------------------------
-    # Immutability
+    # Validation
     # -------------------------
     def clean(self):
         if self.debit > 0 and self.credit > 0:
-            raise ValidationError("Ledger entry cannot have both debit and credit")
+            raise ValidationError("Ledger entry cannot have both debit and credit.")
         if self.debit == 0 and self.credit == 0:
-            raise ValidationError("Ledger entry must have a debit or credit")
+            raise ValidationError("Ledger entry must have a debit or credit.")
 
+    # -------------------------
+    # Immutability guarantees
+    # -------------------------
     def save(self, *args, **kwargs):
         if self.pk:
-            raise ValidationError("Ledger entries are immutable")
+            raise ValidationError("Ledger entries are immutable and cannot be modified.")
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        raise ValidationError("Ledger entries are immutable")
+        raise ValidationError("Ledger entries are immutable and cannot be deleted.")
 
     def __str__(self):
         side = "D" if self.debit > 0 else "C"
         amount = self.debit if self.debit > 0 else self.credit
-        return f"{self.entry_type.upper()} | {self.account.code if self.account else 'UNASSIGNED'} | {side}:{amount}"
+        return (
+            f"{self.entry_type.upper()} | "
+            f"{self.account.code} | "
+            f"{side}:{amount}"
+        )
