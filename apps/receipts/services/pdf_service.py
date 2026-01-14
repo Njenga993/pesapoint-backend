@@ -88,3 +88,4 @@ class ReceiptPDFService:
         receipt.pdf.save(pdf_file.name, pdf_file, save=True)
 
         return pdf_file
+    
