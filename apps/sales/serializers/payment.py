@@ -1,19 +1,16 @@
-# apps/sales/serializers/payment.py
 from rest_framework import serializers
 from apps.sales.models import Payment
 
 
 class PaymentSerializer(serializers.ModelSerializer):
-    order_id = serializers.IntegerField(
-        source="order.id",
-        read_only=True,
-    )
+    order = serializers.IntegerField(source="order.id", read_only=True)
 
     class Meta:
         model = Payment
         fields = [
             "id",
-            "order_id",
+            "order",
+            "direction",
             "method",
             "amount",
             "status",

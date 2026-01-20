@@ -16,7 +16,15 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from django.urls import path, include
+from apps.businesses.api.views import BusinessContextDebugView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/v1/sales/', include('apps.sales.api.urls')),
+    path('api/v1/receipts/', include('apps.receipts.api.urls')),
+    path('api/v1/accounts/', include('apps.accounts.api.urls')),
+    path('api/v1/businesses/', include('apps.businesses.api.urls')),
+    path('api/v1/products/', include('apps.products.api.urls')),
+    path("debug-context/", BusinessContextDebugView.as_view()),
 ]

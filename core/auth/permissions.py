@@ -16,3 +16,7 @@ class HasPermission(BasePermission):
 
         codename = self.required_permission.replace(".", "_")
         return request.user.has_perm(f"core.{codename}")
+    
+class CanViewFinancialReports(HasPermission):
+    required_permission = "accounts.view_financial_reports"
+

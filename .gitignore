@@ -1,5 +1,35 @@
-venv/
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+venv/
+.env/
 .env
+.env.*
+pip-wheel-metadata/
+
+# Django
 db.sqlite3
+staticfiles/
+media/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+
+# Node / Frontend (future)
+node_modules/
+dist/
+build/

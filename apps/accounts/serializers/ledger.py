@@ -1,6 +1,7 @@
 # apps/accounts/serializers/ledger.py
 from rest_framework import serializers
 from apps.accounts.models import LedgerEntry
+from apps.accounts.models import Account
 
 
 class LedgerEntrySerializer(serializers.ModelSerializer):
@@ -19,3 +20,9 @@ class LedgerEntrySerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = fields
+
+class AccountSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Account
+        fields = ['id', 'code', 'name']
+        read_only_fields = fields        

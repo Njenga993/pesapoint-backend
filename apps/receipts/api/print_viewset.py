@@ -1,53 +1,103 @@
-# apps/receipts/api/print_viewset.py
-from rest_framework.viewsets import ViewSet
-from rest_framework.permissions import IsAuthenticated
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 
+from apps.receipts.models import Receipt
 from apps.receipts.services.print_audit_service import ReceiptPrintAuditService
-from core.auth.permissions import HasPermission
-from rest_framework import viewsets, filters
-from django_filters.rest_framework import DjangoFilterBackend
-
-from apps.receipts.models import ReceiptPrintLog
-from apps.receipts.serializers import ReceiptPrintLogSerializer
-from core.pagination import StandardResultsSetPagination
-from core.permissions import IsPermitted
+from apps.receipts.permissions import (
+    IsBusinessManager,
+    IsBusinessStaff,
+)
 
 
-class ReceiptPrintLogViewSet(viewsets.ReadOnlyModelViewSet):
+class ReceiptPrintViewSet(viewsets.ViewSet):
     """
-    Read-only audit logs for printed receipts.
+    Receipt printing endpoints (business-scoped).
     """
-    queryset = ReceiptPrintLog.objects.all()
-    serializer_class = ReceiptPrintLogSerializer
-    pagination_class = StandardResultsSetPagination
-    permission_classes = [IsPermitted]
 
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['receipt__receipt_number', 'method', 'printed_by']
-    search_fields = ['receipt__receipt_number', 'printed_by__username']
-    ordering_fields = ['created_at', 'receipt__receipt_number']
-    ordering = ['-created_at']
+    permission_classes = [IsAuthenticated]
 
+    def get_permissions(self):
+        if self.action == "print_pdf":
+            permission_classes = [IsAuthenticated, IsBusinessManager]
+        elif self.action == "print_thermal":
+            permission_classes = [IsAuthenticated, IsBusinessStaff]
+        else:
+            permission_classes = self.permission_classes
 
-class ReceiptPrintViewSet(ViewSet):
-    permission_classes = [
-        IsAuthenticated,
-        HasPermission("receipts.print_receipt"),
-    ]
+        return [permission() for permission in permission_classes]
 
-    def create(self, request):
+    # -------------------------------------------------
+    # PDF Printing
+    # -------------------------------------------------
+
+    @action(detail=False, methods=["post"], url_path="pdf")
+    def print_pdf(self, request):
         receipt_id = request.data.get("receipt_id")
-        method = request.data.get("method")  # pdf | thermal
 
-        ReceiptPrintAuditService.print_receipt(
-            receipt_id=receipt_id,
-            method=method,
-            user=request.user,
+        if not receipt_id:
+            return Response(
+                {"detail": "receipt_id is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        receipt = Receipt.objects.filter(
+            id=receipt_id,
+            business=request.business
+        ).first()
+
+        if not receipt:
+            return Response(
+                {"detail": "Receipt not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        ReceiptPrintAuditService.log_print(
+            receipt_id=receipt.id,
+            method="pdf",
+            printed_by=request.user,
         )
 
         return Response(
-            {"status": "printed"},
+            {"status": "pdf_printed"},
+            status=status.HTTP_201_CREATED,
+        )
+
+    # -------------------------------------------------
+    # Thermal Printing
+    # -------------------------------------------------
+
+    @action(detail=False, methods=["post"], url_path="thermal")
+    def print_thermal(self, request):
+        receipt_id = request.data.get("receipt_id")
+        printer_name = request.data.get("printer_name", "")
+
+        if not receipt_id:
+            return Response(
+                {"detail": "receipt_id is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        receipt = Receipt.objects.filter(
+            id=receipt_id,
+            business=request.business
+        ).first()
+
+        if not receipt:
+            return Response(
+                {"detail": "Receipt not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        ReceiptPrintAuditService.log_print(
+            receipt_id=receipt.id,
+            method="thermal",
+            printed_by=request.user,
+            printer_name=printer_name,
+        )
+
+        return Response(
+            {"status": "thermal_printed"},
             status=status.HTTP_201_CREATED,
         )

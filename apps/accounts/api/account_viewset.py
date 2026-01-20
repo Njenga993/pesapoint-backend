@@ -1,38 +1,38 @@
-# apps/accounts/api/ledger_viewset.py
+# apps/accounts/api/account_viewset.py
 from rest_framework.viewsets import ReadOnlyModelViewSet
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import filters
 from django_filters.rest_framework import DjangoFilterBackend
 
-from apps.accounts.models import LedgerEntry
-from apps.accounts.serializers.ledger import LedgerEntrySerializer
+from apps.accounts.models import Account
+from apps.accounts.serializers.ledger import AccountSerializer  # we will create this
 from core.auth.permissions import HasPermission
 from core.pagination import StandardResultsSetPagination
 
 
-class LedgerViewSet(ReadOnlyModelViewSet):
+class AccountViewSet(ReadOnlyModelViewSet):
     """
-    Read-only API for Ledger Entries.
+    Read-only API for Chart of Accounts.
     """
-    queryset = LedgerEntry.objects.select_related("account", "order", "payment").order_by("-created_at")
-    serializer_class = LedgerEntrySerializer
+    queryset = Account.objects.all().order_by("code")
+    serializer_class = AccountSerializer
     pagination_class = StandardResultsSetPagination
     permission_classes = [
         IsAuthenticated,
-        HasPermission,  # HasPermission is now used as class without argument
+        HasPermission,  # class-based permission
     ]
 
     # Filtering, search, ordering
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['account', 'order', 'payment', 'entry_type']
-    search_fields = ['reference']
-    ordering_fields = ['created_at', 'debit', 'credit']
-    ordering = ['-created_at']
+    filterset_fields = ['code', 'name']
+    search_fields = ['code', 'name']
+    ordering_fields = ['code', 'name']
+    ordering = ['code']
 
     def get_permissions(self):
         """
         Assign specific permission per action.
         """
-        if self.action == "list" or self.action == "retrieve":
+        if self.action in ["list", "retrieve"]:
             return [IsAuthenticated(), HasPermission()]
         return super().get_permissions()
