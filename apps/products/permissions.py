@@ -6,9 +6,11 @@ class IsOwner(BasePermission):
         return request.business_role == "owner"
 
 
-class IsManager(BasePermission):
+class IsBusinessManager(BasePermission):
     def has_permission(self, request, view):
-        return request.business_role in ["owner", "manager"]
+        role = getattr(request, "business_role", None)
+        return role in ["owner", "manager"]
+
 
 
 class IsCashier(BasePermission):

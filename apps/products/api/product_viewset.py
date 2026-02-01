@@ -9,12 +9,15 @@ from django.db.models.functions import Coalesce
 from apps.products.models import Product, Inventory
 from apps.products.serializers.product_serializer import ProductSerializer
 from apps.products.serializers.pos_product_serializer import POSProductSerializer
-from apps.products.permissions import IsManager
+from apps.products.permissions import IsBusinessManager, IsCashier
+from apps.businesses.api.base import BusinessScopedViewSet
 
 
-class ProductViewSet(viewsets.ModelViewSet):
+
+
+class ProductViewSet(BusinessScopedViewSet):
     serializer_class = ProductSerializer
-    permission_classes = [IsAuthenticated, IsManager]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return Product.objects.filter(
@@ -24,6 +27,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(business=self.request.business)
 
+
     # -------------------------------------------
     # POS PRODUCT LIST (FAST QUERY)
     # -------------------------------------------
@@ -31,7 +35,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         detail=False,
         methods=["get"],
         url_path="pos",
-        permission_classes=[IsAuthenticated],
+        permission_classes=[IsAuthenticated, IsCashier],
     )
     def pos_list(self, request):
         inventory_subquery = Inventory.objects.filter(
