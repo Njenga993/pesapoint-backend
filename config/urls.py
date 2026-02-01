@@ -18,8 +18,17 @@ from django.contrib import admin
 from django.urls import path
 from django.urls import path, include
 from apps.businesses.api.views import BusinessContextDebugView
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
+from config.schema import ProtectedSchemaView
+
 
 urlpatterns = [
+    path('api/v1/schema/', ProtectedSchemaView.as_view() , name='api-schema'),
+    path('api/v1/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/v1/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('admin/', admin.site.urls),
     path('api/v1/sales/', include('apps.sales.api.urls')),
     path('api/v1/receipts/', include('apps.receipts.api.urls')),

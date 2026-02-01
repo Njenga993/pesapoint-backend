@@ -12,8 +12,8 @@ class PaymentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsBusinessManager]
 
     def get_queryset(self):
-        return Payment.objects.filter(business=self.request.business).select_related(
-            "order", "customer"
+        return Payment.objects.filter(order__business=self.request.business).select_related(
+            "order"
         ).order_by("-created_at")
 
     def perform_create(self, serializer):

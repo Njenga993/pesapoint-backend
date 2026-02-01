@@ -9,14 +9,13 @@ from apps.businesses.api.permissions import IsBusinessOwner, IsBusinessManager
 
 class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
-    permission_classes = [IsAuthenticated, IsBusinessManager]  # Only owner/manager can access
+    permission_classes = [IsAuthenticated, IsBusinessManager]
 
     def get_queryset(self):
-        # Safe filtering by middleware
-        return Order.objects.filter(business=self.request.business).select_related(
-            "customer", "business"
-        ).order_by("-created_at")
+        return Order.objects.filter(
+            business=self.request.business
+        ).select_related( "business")
 
     def perform_create(self, serializer):
-        # Automatically attach the business
         serializer.save(business=self.request.business)
+

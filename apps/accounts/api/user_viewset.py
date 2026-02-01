@@ -52,3 +52,12 @@ class UserViewSet(viewsets.ModelViewSet):
         user.is_active = False
         user.save()
         return Response({"status": "user disabled"}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated])
+    def me(self, request):
+        """
+        Return the currently authenticated user
+        GET /accounts/users/me/
+        """
+        serializer = self.get_serializer(request.user)
+        return Response(serializer.data)    

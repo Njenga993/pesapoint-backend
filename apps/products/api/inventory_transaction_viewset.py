@@ -1,15 +1,17 @@
+# apps/products/api/inventory_viewset.py
 from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.products.models import Inventory, InventoryTransaction
 from apps.products.serializers.inventory_transaction_serializer import InventoryTransactionSerializer
-from apps.products.permissions import IsManager, IsOwner
+from apps.products.permissions import IsBusinessManager
+from apps.businesses.api.base import BusinessScopedViewSet  # Import the base class
 
 
-class InventoryTransactionViewSet(viewsets.ModelViewSet):
+class InventoryTransactionViewSet(BusinessScopedViewSet):
     serializer_class = InventoryTransactionSerializer
-    permission_classes = [IsAuthenticated, IsManager]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return InventoryTransaction.objects.filter(
