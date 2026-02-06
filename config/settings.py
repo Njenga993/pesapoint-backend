@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_filters',
     'rest_framework',
+    'drf_spectacular',
     'core',
     'corsheaders',
     'apps.accounts.apps.AccountsConfig',
@@ -135,6 +136,8 @@ AUTH_USER_MODEL = 'accounts.User'
 
 REST_FRAMEWORK = {
 
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),

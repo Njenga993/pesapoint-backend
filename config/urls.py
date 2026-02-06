@@ -23,9 +23,21 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 from config.schema import ProtectedSchemaView
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerView,
+)
 
 
 urlpatterns = [
+     # This is the raw machine-readable schema file
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    # This is a nice UI to explore the API (Swagger UI)
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    # This is an alternative UI (ReDoc)
+    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+
     path('api/v1/schema/', ProtectedSchemaView.as_view() , name='api-schema'),
     path('api/v1/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/v1/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),

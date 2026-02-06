@@ -1,6 +1,3 @@
-
-
-# apps/sales/api/payment_viewset.py
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from apps.sales.models import Payment
@@ -16,6 +13,8 @@ class PaymentViewSet(viewsets.ModelViewSet):
             "order"
         ).order_by("-created_at")
 
-    def perform_create(self, serializer):
-        serializer.save(business=self.request.business)
-
+    # BUG FIX: REMOVED THE perform_create METHOD
+    # The Payment model does not have a 'business' field.
+    # The business context is correctly handled by the relationship to the Order.
+    # def perform_create(self, serializer):
+    #     serializer.save(business=self.request.business) # <-- THIS WAS INCORRECT

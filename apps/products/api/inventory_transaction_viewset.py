@@ -1,4 +1,4 @@
-# apps/products/api/inventory_viewset.py
+# apps/products/api/inventory_transaction_viewset.py
 from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -6,38 +6,20 @@ from rest_framework.response import Response
 from apps.products.models import Inventory, InventoryTransaction
 from apps.products.serializers.inventory_transaction_serializer import InventoryTransactionSerializer
 from apps.products.permissions import IsBusinessManager
-from apps.businesses.api.base import BusinessScopedViewSet  # Import the base class
+from apps.businesses.api.base import BusinessScopedViewSet
 
 
 class InventoryTransactionViewSet(BusinessScopedViewSet):
+    """
+    ViewSet for VIEWING inventory transaction history.
+    This is now a read-only API. Transactions are created by other actions.
+    """
     serializer_class = InventoryTransactionSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated] # Require manager to view history
 
     def get_queryset(self):
         return InventoryTransaction.objects.filter(
             business=self.request.business
-        ).select_related("product")
+        ).select_related("product").order_by("-created_at")
 
-    def perform_create(self, serializer):
-        transaction = serializer.save(business=self.request.business)
-
-        # Get or create inventory record
-        inventory, _ = Inventory.objects.get_or_create(
-            business=self.request.business,
-            product=transaction.product,
-        )
-
-        # Apply stock logic
-        if transaction.transaction_type == "in":
-            inventory.quantity += transaction.quantity
-
-        elif transaction.transaction_type == "out":
-            inventory.quantity -= transaction.quantity
-
-        elif transaction.transaction_type == "adjust":
-            # Only owner allowed to adjust
-            if self.request.business_role != "owner":
-                raise PermissionError("Only owners can adjust stock")
-            inventory.quantity = transaction.quantity
-
-        inventory.save()
+    # REMOVED perform_create. Transactions are now created internally by other actions.

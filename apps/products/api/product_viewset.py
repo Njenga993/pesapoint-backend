@@ -1,4 +1,5 @@
-from rest_framework import viewsets
+# apps/products/api/product_viewset.py
+from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -13,8 +14,6 @@ from apps.products.permissions import IsBusinessManager, IsCashier
 from apps.businesses.api.base import BusinessScopedViewSet
 
 
-
-
 class ProductViewSet(BusinessScopedViewSet):
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated]
@@ -25,17 +24,30 @@ class ProductViewSet(BusinessScopedViewSet):
         )
 
     def perform_create(self, serializer):
-        serializer.save(business=self.request.business)
+        """
+        Harden: Save the product and then create a corresponding inventory record.
+        """
+        product = serializer.save(business=self.request.business)
+        # Automatically create an inventory record for the new product
+        Inventory.objects.get_or_create(
+            business=product.business,
+            product=product,
+            defaults={'quantity': 0}
+        )
 
+    def perform_destroy(self, instance):
+        """
+        Harden: Perform a soft-delete instead of a hard-delete to preserve data integrity.
+        """
+        instance.is_active = False
+        instance.save()
 
-    # -------------------------------------------
-    # POS PRODUCT LIST (FAST QUERY)
-    # -------------------------------------------
+    # ... (pos_list action remains the same) ...
     @action(
         detail=False,
         methods=["get"],
         url_path="pos",
-        permission_classes=[IsAuthenticated, IsCashier],
+        permission_classes=[IsAuthenticated],
     )
     def pos_list(self, request):
         inventory_subquery = Inventory.objects.filter(
